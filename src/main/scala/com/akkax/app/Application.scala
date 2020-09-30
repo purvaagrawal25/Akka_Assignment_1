@@ -15,7 +15,7 @@ import scala.concurrent.duration._
 
 object Application extends App {
   val actorSystem = ActorSystem("messaging")
-  val timeout: Timeout = Timeout(20 seconds)
+  implicit val timeout: Timeout = Timeout(60 seconds)
   val processor: ActorRef = actorSystem.actorOf(Props(new ProcessorActor))
   val request = List(
     Create("log1", "File Content - 1"),
@@ -30,7 +30,7 @@ object Application extends App {
     Create("log10", "File Content - 10")
   )
   val start = Instant.now()
-  val results: List[Future[Done]] = request.map {
+  val results = request.map {
     request =>
       (processor ? request)
         .mapTo[Done]
@@ -39,14 +39,18 @@ object Application extends App {
             throw exception
 
         }
-      val finalResult: Future[List[Done]] = Future.sequence(results)
-      finalResult.foreach { status =>
-        val processTime = Instant.now().getEpochSecond - start.getEpochSecond
-        println("Processing Time:=" + processTime)
-        println("File Status:" + status.toString())
-      }
   }
+  val finalRes: Future[List[Done]] = Future.sequence(results)
+  finalRes.foreach { status =>
+    val processTime = Instant.now().getEpochSecond - start.getEpochSecond
+    println("Processing Time:=" + processTime)
+    println("File Status:" + status.toString())
+  }
+  finalRes
 
 }
+
+
+
 
 
